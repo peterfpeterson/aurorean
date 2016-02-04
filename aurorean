@@ -12,7 +12,8 @@ def loadConfig(filename="aurorean.yaml"):
                    'templated':'partials/templated'},
               'pagetitle': 'Aurorean',
               'head_items':[{'text':'bootstrap/default/head'}],
-              'javascript_items':[{'text':'bootstrap/default/javascript'}]
+              'javascript_items':[{'text':'bootstrap/default/javascript'}],
+              'body_items':[{'text':'<h1>Hello, world!</h1>'}]
               }
 
     # load configfile

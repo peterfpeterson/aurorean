@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>{{ pagetitle }}</title>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+<title>{{ pagetitle }}</title>
 
 {{ #head_items }}
 {{ text }}
 {{ /head_items }}
-  </head>
-  <body>
+</head>
+
+
+<body>
 {{ #javascript_items }}
 {{ text }}
 {{ /javascript_items }}
 
-    <h1>Hello, world!</h1>
-
-  </body>
+{{ #body_items }}
+{{ text }}
+{{ /body_items }}
+</body>
 </html>
