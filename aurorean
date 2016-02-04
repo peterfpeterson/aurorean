@@ -4,39 +4,48 @@ import os
 import pystache  # https://github.com/defunkt/pystache
 import yaml  # https://pypi.python.org/pypi/PyYAML/
 
-def loadConfig(filename="aurorean.yaml"):
-    # default configuration
-    config = {'outputdir': 'site',
-              'partialdirs':
+renderer=pystache.Renderer(escape=lambda u:u) # TODO move
+
+class Aurorean:
+    def __init__(self, configfile):
+        self.config = self._loadConfig(configfile)
+
+    def _loadConfig(self, filename):
+        # default configuration
+        config = {'outputdir': 'site',
+                  'partialdirs':
                   {'verbatim':'partials/verbatim',
                    'templated':'partials/templated'},
-              'pagetitle': 'Aurorean',
-              'head_items':[{'text':'bootstrap/default/head'}],
-              'javascript_items':[{'text':'bootstrap/default/javascript'}],
-              'body_items':[{'text':'<h1>Hello, world!</h1>'}]
-              }
+                  'pagetitle': 'Aurorean',
+                  'head_items':[{'text':'bootstrap/default/head'}],
+                  'javascript_items':[{'text':'bootstrap/default/javascript'}],
+                  'body_items':[{'text':'forecastio/body',
+                                 'extras':{'latt':'35.9605556',
+                                           'long':'-83.9208333',
+                                           'name':'Downtown Knoxville'}}]
+                 }
 
-    # load configfile
-    if os.path.exists(filename):
-        with open(filename, 'r') as handle:
-            yaml_config = yaml.load(handle)
-            if yaml_config is not None:
-                config.update(yaml_config)
-    else:
-        print "Did not find config file '%s' using defaults" % filename
+        # load configfile
+        if os.path.exists(filename):
+            with open(filename, 'r') as handle:
+                yaml_config = yaml.load(handle)
+                if yaml_config is not None:
+                    config.update(yaml_config)
+        else:
+            print "Did not find config file '%s' using defaults" % filename
 
-    if not os.path.exists(config['partialdirs']['verbatim']):
-        print "Directory for partialdirs.verbatim " \
-            + "'%s' does not exist" % config['partialdirs']['verbatim']
-        config['partialdirs']['verbatim'] = None
-    if not os.path.exists(config['partialdirs']['templated']):
-        print "Directory for partialdirs.templated " \
-            + "'%s' does not exist" % config['partialdirs']['templated']
-        config['partialdirs']['templated'] = None
+        if not os.path.exists(config['partialdirs']['verbatim']):
+            print "Directory for partialdirs.verbatim " \
+                + "'%s' does not exist" % config['partialdirs']['verbatim']
+            config['partialdirs']['verbatim'] = None
+        if not os.path.exists(config['partialdirs']['templated']):
+            print "Directory for partialdirs.templated " \
+                + "'%s' does not exist" % config['partialdirs']['templated']
+            config['partialdirs']['templated'] = None
 
-    return config
+        return config
 
-def convertSymbolicNames(name, config):
+def convertSymbolicNames(name, config, extras={}):
     if config['partialdirs']['verbatim'] is not None:
         filename = os.path.join(config['partialdirs']['verbatim'], name)
         if os.path.exists(filename):
@@ -44,29 +53,32 @@ def convertSymbolicNames(name, config):
                 text = handle.read()
             return text
     if config['partialdirs']['templated'] is not None:
-        filename = os.path.join(config['partialdirs']['verbatim'], name)
+        filename = os.path.join(config['partialdirs']['templated'], name)
         if os.path.exists(filename):
             with open(filename, 'r') as handle:
                 text = handle.read()
-            return text
+            return renderer.render(text, extras)
 
     return name
 
 if __name__ == "__main__":
-    config = loadConfig()
-    print config
+    builder = Aurorean("aurorean.yaml")
+    print builder.config
 
-    for item in config['head_items']:
-        item['text'] = convertSymbolicNames(item['text'], config)
+    for item in builder.config['head_items']:
+        item['text'] = convertSymbolicNames(item['text'], builder.config)
 
-    for item in config['javascript_items']:
-        item['text'] = convertSymbolicNames(item['text'], config)
+    for item in builder.config['javascript_items']:
+        item['text'] = convertSymbolicNames(item['text'], builder.config)
+
+    for item in builder.config['body_items']:
+        item['text'] = convertSymbolicNames(item['text'], builder.config, item['extras'])
 
     with open('index.html.in', 'r') as handle:
         template = handle.read()
 
     renderer=pystache.Renderer(escape=lambda u:u)
-    finaltext=renderer.render(template, config)
+    finaltext=renderer.render(template, builder.config)
 
     with open('index.html', 'w') as handle:
         handle.write(finaltext)
