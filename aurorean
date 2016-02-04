@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+import os
+import pystache  # https://github.com/defunkt/pystache
+import yaml  # https://pypi.python.org/pypi/PyYAML/
+
+def loadConfig(filename="aurorean.yaml"):
+    # default configuration
+    config = {'outputdir': 'site',
+              'pagetitle': 'Aurorean'
+              }
+
+    # load configfile
+    if os.path.exists(filename):
+        with open(filename, 'r') as handle:
+            yaml_config = yaml.load(handle)
+            if yaml_config is not None:
+                config.update(yaml_config)
+    else:
+        print "Did not find config file '%s' using defaults" % filename
+
+    return config
+
+bootstrap_head_default=r"""    <!-- Bootstrap -->
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+"""
+
+bootstrap_javascript_default=r"""    <!-- boostrap javascript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="/js/vendor/jquery-1.11.3.min.js"><\/script>')</script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <!-- <script src="js/bootstrap.min.js"></script> -->
+"""
+
+class Bootstrap:
+    def head(self):
+        pass
+
+if __name__ == "__main__":
+    config = loadConfig()
+
+    with open('index.html.in', 'r') as handle:
+        template = handle.read()
+
+    config['head_items'] = [{'text':bootstrap_head_default}]
+    config['javascript_items'] = [{'text':bootstrap_javascript_default}]
+    renderer=pystache.Renderer(escape=lambda u:u)
+    finaltext=renderer.render(template, config)
+
+    with open('index.html', 'w') as handle:
+        handle.write(finaltext)
+
+    print config
