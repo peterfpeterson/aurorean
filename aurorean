@@ -12,9 +12,9 @@ class Aurorean:
         # default configuration
         config = {'outputdir': 'site',
                   'pagetitle': 'Aurorean',
-                  'latt':'35.9605556',
-                  'long':'-83.9208333',
-                  'name':'Downtown Knoxville', # should be segmented off
+                  'forecastio':{'name':'Downtown Knoxville',
+                                'latt':'35.9605556',
+                                'long':'-83.9208333'},
                  }
 
         # load configfile
