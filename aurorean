@@ -7,49 +7,14 @@ import yaml  # https://pypi.python.org/pypi/PyYAML/
 class Aurorean:
     def __init__(self, configfile):
         self.config = self._loadConfig(configfile)
-        for key in ['head_items', 'javascript_items', 'body_items']:
-            self._processSymbols(key)
-
-    def _toPartialName(self, partialtype, name):
-        if self.config['partialdirs'][partialtype] is None:
-            return None
-        filename = os.path.join(self.config['partialdirs'][partialtype], name)
-        if os.path.exists(filename):
-            return filename
-
-    def _convertSymbolicNames(self, name, extras):
-        partialName = self._toPartialName('verbatim', name)
-        if partialName is not None:
-            with open(partialName, 'r') as handle:
-                text = handle.read()
-            return text
-
-        partialName = self._toPartialName('templated', name)
-        if partialName is not None:
-            with open(partialName, 'r') as handle:
-                text = handle.read()
-            return pystache.render(text, extras)
-
-        return name
-
-    def _processSymbols(self, key):
-        for item in self.config[key]:
-            extras = item.get('extras', {})
-            item['text'] = self._convertSymbolicNames(item['text'], extras)
 
     def _loadConfig(self, filename):
         # default configuration
         config = {'outputdir': 'site',
-                  'partialdirs':
-                  {'verbatim':'partials/verbatim',
-                   'templated':'partials/templated'},
                   'pagetitle': 'Aurorean',
-                  'head_items':[{'text':'bootstrap/default/head'}],
-                  'javascript_items':[{'text':'bootstrap/default/javascript'}],
-                  'body_items':[{'text':'forecastio/body',
-                                 'extras':{'latt':'35.9605556',
-                                           'long':'-83.9208333',
-                                           'name':'Downtown Knoxville'}}]
+                  'latt':'35.9605556',
+                  'long':'-83.9208333',
+                  'name':'Downtown Knoxville', # should be segmented off
                  }
 
         # load configfile
@@ -61,15 +26,6 @@ class Aurorean:
         else:
             print "Did not find config file '%s' using defaults" % filename
 
-        if not os.path.exists(config['partialdirs']['verbatim']):
-            print "Directory for partialdirs.verbatim " \
-                + "'%s' does not exist" % config['partialdirs']['verbatim']
-            config['partialdirs']['verbatim'] = None
-        if not os.path.exists(config['partialdirs']['templated']):
-            print "Directory for partialdirs.templated " \
-                + "'%s' does not exist" % config['partialdirs']['templated']
-            config['partialdirs']['templated'] = None
-
         return config
 
 
@@ -80,7 +36,8 @@ if __name__ == "__main__":
         template = handle.read()
 
 
-    renderer = pystache.Renderer()
+    renderer = pystache.Renderer(#missing_tags='strict',
+                                 search_dirs=['partials'])
     finaltext=renderer.render(template, builder.config)
 
     if not os.path.exists(builder.config['outputdir']):
