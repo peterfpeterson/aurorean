@@ -28,23 +28,24 @@ class Aurorean:
 
         return config
 
+    def render(self):
+        with open('index.html.in', 'r') as handle:
+            template = handle.read()
+
+        renderer = pystache.Renderer(missing_tags='strict',
+                                     search_dirs=['partials'])
+        finaltext=renderer.render(template, self.config)
+
+        outputdir = self.config['outputdir']
+        if not os.path.exists(outputdir):
+            os.mkdir(outputdir)
+
+        with open(os.path.join(outputdir,'index.html'), 'w') \
+             as handle:
+            handle.write(finaltext)
+
+
 
 if __name__ == "__main__":
     builder = Aurorean("aurorean.yaml")
-
-    with open('index.html.in', 'r') as handle:
-        template = handle.read()
-
-
-    renderer = pystache.Renderer(#missing_tags='strict',
-                                 search_dirs=['partials'])
-    finaltext=renderer.render(template, builder.config)
-
-    if not os.path.exists(builder.config['outputdir']):
-        os.mkdir(builder.config['outputdir'])
-
-    with open(os.path.join(builder.config['outputdir'],'index.html'), 'w') \
-            as handle:
-        handle.write(finaltext)
-
-    print "Done"
+    builder.render()
