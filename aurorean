@@ -4,8 +4,6 @@ import os
 import pystache  # https://github.com/defunkt/pystache
 import yaml  # https://pypi.python.org/pypi/PyYAML/
 
-renderer=pystache.Renderer(escape=lambda u:u) # TODO move
-
 class Aurorean:
     def __init__(self, configfile):
         self.config = self._loadConfig(configfile)
@@ -30,7 +28,7 @@ class Aurorean:
         if partialName is not None:
             with open(partialName, 'r') as handle:
                 text = handle.read()
-            return renderer.render(text, extras)
+            return pystache.render(text, extras)
 
         return name
 
@@ -81,6 +79,8 @@ if __name__ == "__main__":
     with open('index.html.in', 'r') as handle:
         template = handle.read()
 
+
+    renderer = pystache.Renderer()
     finaltext=renderer.render(template, builder.config)
 
     if not os.path.exists(builder.config['outputdir']):

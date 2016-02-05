@@ -8,18 +8,18 @@
 <title>{{ pagetitle }}</title>
 
 {{ #head_items }}
-{{ text }}
+{{{ text }}}
 {{ /head_items }}
 </head>
 
 
 <body>
 {{ #javascript_items }}
-{{ text }}
+{{{ text }}}
 {{ /javascript_items }}
 
 {{ #body_items }}
-{{ text }}
+{{{ text }}}
 {{ /body_items }}
 </body>
 </html>
