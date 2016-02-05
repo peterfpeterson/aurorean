@@ -9,6 +9,35 @@ renderer=pystache.Renderer(escape=lambda u:u) # TODO move
 class Aurorean:
     def __init__(self, configfile):
         self.config = self._loadConfig(configfile)
+        for key in ['head_items', 'javascript_items', 'body_items']:
+            self._processSymbols(key)
+
+    def _toPartialName(self, partialtype, name):
+        if self.config['partialdirs'][partialtype] is None:
+            return None
+        filename = os.path.join(self.config['partialdirs'][partialtype], name)
+        if os.path.exists(filename):
+            return filename
+
+    def _convertSymbolicNames(self, name, extras):
+        partialName = self._toPartialName('verbatim', name)
+        if partialName is not None:
+            with open(partialName, 'r') as handle:
+                text = handle.read()
+            return text
+
+        partialName = self._toPartialName('templated', name)
+        if partialName is not None:
+            with open(partialName, 'r') as handle:
+                text = handle.read()
+            return renderer.render(text, extras)
+
+        return name
+
+    def _processSymbols(self, key):
+        for item in self.config[key]:
+            extras = item.get('extras', {})
+            item['text'] = self._convertSymbolicNames(item['text'], extras)
 
     def _loadConfig(self, filename):
         # default configuration
@@ -45,42 +74,20 @@ class Aurorean:
 
         return config
 
-def convertSymbolicNames(name, config, extras={}):
-    if config['partialdirs']['verbatim'] is not None:
-        filename = os.path.join(config['partialdirs']['verbatim'], name)
-        if os.path.exists(filename):
-            with open(filename, 'r') as handle:
-                text = handle.read()
-            return text
-    if config['partialdirs']['templated'] is not None:
-        filename = os.path.join(config['partialdirs']['templated'], name)
-        if os.path.exists(filename):
-            with open(filename, 'r') as handle:
-                text = handle.read()
-            return renderer.render(text, extras)
-
-    return name
 
 if __name__ == "__main__":
     builder = Aurorean("aurorean.yaml")
-    print builder.config
-
-    for item in builder.config['head_items']:
-        item['text'] = convertSymbolicNames(item['text'], builder.config)
-
-    for item in builder.config['javascript_items']:
-        item['text'] = convertSymbolicNames(item['text'], builder.config)
-
-    for item in builder.config['body_items']:
-        item['text'] = convertSymbolicNames(item['text'], builder.config, item['extras'])
 
     with open('index.html.in', 'r') as handle:
         template = handle.read()
 
-    renderer=pystache.Renderer(escape=lambda u:u)
     finaltext=renderer.render(template, builder.config)
 
-    with open('index.html', 'w') as handle:
+    if not os.path.exists(builder.config['outputdir']):
+        os.mkdir(builder.config['outputdir'])
+
+    with open(os.path.join(builder.config['outputdir'],'index.html'), 'w') \
+            as handle:
         handle.write(finaltext)
 
     print "Done"
