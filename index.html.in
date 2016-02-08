@@ -7,11 +7,11 @@
 <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 <title>{{ pagetitle }}</title>
 
-{{> bootstrap/default_head }}
+{{> bootstrap/head }}
 </head>
 
 <body>
-{{> bootstrap/default_javascript }}
+{{> bootstrap/javascript }}
 
 {{> forecastio_body }}
 </body>

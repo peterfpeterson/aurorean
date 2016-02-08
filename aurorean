@@ -12,9 +12,7 @@ class Aurorean:
         # default configuration
         config = {'outputdir': 'site',
                   'pagetitle': 'Aurorean',
-                  'forecastio':{'name':'Downtown Knoxville',
-                                'latt':'35.9605556',
-                                'long':'-83.9208333'},
+                  'bootstrap': 'default', # or 'custom'
                  }
 
         # load configfile
@@ -25,6 +23,12 @@ class Aurorean:
                     config.update(yaml_config)
         else:
             print "Did not find config file '%s' using defaults" % filename
+
+        # convert bootstrap into proper things for mustache
+        if config['bootstrap'] == 'default':
+            config['bootstrap'] = {'custom':False, 'default':True}
+        elif config['bootstrap'] == 'custom':
+            config['bootstrap'] = {'custom':True, 'default':False}
 
         return config
 
