@@ -53,3 +53,8 @@ class Aurorean:
 if __name__ == "__main__":
     builder = Aurorean("aurorean.yaml")
     builder.render()
+
+    if os.path.exists('forecastio.json'):
+        with open('forecastio.json', 'r') as handle:
+            yaml_doc = yaml.load(handle)
+            print yaml_doc['hourly']['data'][0]
