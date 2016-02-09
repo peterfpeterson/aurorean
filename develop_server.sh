@@ -1,29 +1,16 @@
 #!/usr/bin/env bash
-##
-# This section should match your Makefile
-##
-PY=${PY:-python}
-PELICAN=${PELICAN:-pelican}
-PELICANOPTS=
-
 BASEDIR=$(pwd)
-INPUTDIR=$BASEDIR/content
-OUTPUTDIR=$BASEDIR/output
-CONFFILE=$BASEDIR/pelicanconf.py
+OUTPUTDIR=$BASEDIR/site
+PYTHON=$(command -v python)
 
 ###
 # Don't change stuff below here unless you are sure
 ###
 
 SRV_PID=$BASEDIR/srv.pid
-PELICAN_PID=$BASEDIR/pelican.pid
 
 function usage(){
   echo "usage: $0 (stop) (start) (restart) [port]"
-  echo "This starts Pelican in debug and reload mode and then launches"
-  echo "an HTTP server to help site development. It doesn't read"
-  echo "your Pelican settings, so if you edit any paths in your Makefile"
-  echo "you will need to edit your settings as well."
   exit 3
 }
 
@@ -35,7 +22,7 @@ function shut_down(){
   PID=$(cat $SRV_PID)
   if [[ $? -eq 0 ]]; then
     if alive $PID; then
-      echo "Stopping HTTP server"
+      echo "Stopping HTTP server (pid=$PID)"
       kill $PID
     else
       echo "Stale PID, deleting"
@@ -44,49 +31,31 @@ function shut_down(){
   else
     echo "HTTP server PIDFile not found"
   fi
-
-  PID=$(cat $PELICAN_PID)
-  if [[ $? -eq 0 ]]; then
-    if alive $PID; then
-      echo "Killing Pelican"
-      kill $PID
-    else
-      echo "Stale PID, deleting"
-    fi
-    rm $PELICAN_PID
-  else
-    echo "Pelican PIDFile not found"
-  fi
 }
 
 function start_up(){
   local port=$1
-  echo "Starting up Pelican and HTTP server"
+  echo "Starting up HTTP server"
   shift
-  $PELICAN --debug --autoreload -r $INPUTDIR -o $OUTPUTDIR -s $CONFFILE $PELICANOPTS &
-  pelican_pid=$!
-  echo $pelican_pid > $PELICAN_PID
   cd $OUTPUTDIR
-  $PY -m pelican.server $port &
+  $PYTHON -m SimpleHTTPServer $port &
   srv_pid=$!
   echo $srv_pid > $SRV_PID
   cd $BASEDIR
   sleep 1
-  if ! alive $pelican_pid ; then
-    echo "Pelican didn't start. Is the Pelican package installed?"
-    return 1
-  elif ! alive $srv_pid ; then
+  if ! alive $srv_pid ; then
     echo "The HTTP server didn't start. Is there another service using port" $port "?"
     return 1
   fi
-  echo 'Pelican and HTTP server processes now running in background.'
+  echo 'HTTP server processes now running in background.'
+  echo "navigate to http://localhost:$port"
 }
 
 ###
 #  MAIN
 ###
 [[ ($# -eq 0) || ($# -gt 2) ]] && usage
-port=''
+port='8000'
 [[ $# -eq 2 ]] && port=$2
 
 if [[ $1 == "stop" ]]; then
