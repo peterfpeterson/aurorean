@@ -26,23 +26,30 @@ class Config(object):
 
 class DarkSky(object):
     def __init__(self, info):
+        self.data = None
+
         if info is None:
             self.url = None
             self.hash = None
         else:
             try:
+                # https://darksky.net/dev/docs/forecast
                 self.url = 'https://api.darksky.net/forecast/{secret}/{lat},{lon}'.format(**info)
                 self.hash = '{secret}/{lat},{lon}'.format(**info)
                 self.hash = hashlib.md5(self.hash.encode()).hexdigest()
             except KeyError as e:
                 print('While getting darksky information')
                 raise e
-        print('>>>>', self.hash)
+
+        self.__get()
 
     def __str__(self):
         return self.url
 
-    def get(self):
+    def __get(self):
+        if self.data is not None:
+            return
+
         cachefile = 'darksky_{0}.json'.format(self.hash)
         self.data = None
         if os.path.exists(cachefile):
@@ -59,7 +66,10 @@ class DarkSky(object):
 
         if self.data is None:
             print('getting data from darksky')
-            req = requests.get(self.url, {})
+
+            options = dict(exclude='minutely')
+
+            req = requests.get(self.url, options)
             print('request returned', req.status_code)
             if req.status_code != 200:
                 print(req)
@@ -70,14 +80,21 @@ class DarkSky(object):
             with open(cachefile, 'w') as handle:
                 json.dump(self.data, handle)
 
+    def currently(self):
+        return self.data['currently']
+
+    def hourly(self):
+        return self.data['hourly']
+
+    def daily(self):
+        return self.data['daily']
+
+    def alerts(self):
+        return self.data.get('alerts', None)
 
 if __name__ == "__main__":
     config = Config('aurorean.json')
 
-    print(config.json())
-    config.darksky.get()
-
-    #if os.path.exists('forecastio.json'):
-    #    with open('forecastio.json', 'r') as handle:
-    #        yaml_doc = yaml.load(handle)
-    #        print yaml_doc['hourly']['data'][0]
+    print(config.darksky.currently())
+    print('*****')
+    print(config.darksky.alerts())
