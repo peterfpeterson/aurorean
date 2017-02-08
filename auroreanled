@@ -6,34 +6,16 @@ import hashlib
 import json
 import os
 import requests
-#import yaml  # https://pypi.python.org/pypi/PyYAML/
-
-class Config(object):
-    def __init__(self, filename):
-        self.filename = filename
-
-        with open(filename, 'r') as handle:
-            doc = json.load(handle)
-
-        self.darksky = DarkSky(doc.get('darksky', None))
-
-    def dict(self):
-        return dict(filename=self.filename,
-                    darksky=str(self.darksky))
-
-    def json(self, **kwargs):
-        return json.dumps(self.dict(), **kwargs)
 
 class DarkSky(object):
     def __init__(self, info):
-        self.data = None
+        self.__data = None
 
         if info is None:
             self.url = None
             self.hash = None
         else:
             try:
-                # https://darksky.net/dev/docs/forecast
                 self.url = 'https://api.darksky.net/forecast/{secret}/{lat},{lon}'.format(**info)
                 self.hash = '{secret}/{lat},{lon}'.format(**info)
                 self.hash = hashlib.md5(self.hash.encode()).hexdigest()
@@ -47,11 +29,11 @@ class DarkSky(object):
         return self.url
 
     def __get(self):
-        if self.data is not None:
+        if self.__data is not None:
             return
 
         cachefile = 'darksky_{0}.json'.format(self.hash)
-        self.data = None
+        self.__data = None
         if os.path.exists(cachefile):
             file_created = datetime.datetime.fromtimestamp(os.path.getctime(cachefile))
             delta = datetime.datetime.now() - file_created
@@ -62,39 +44,51 @@ class DarkSky(object):
             else:
                 print('loading data from cache file', cachefile)
                 with open(cachefile, 'r') as handle:
-                    self.data = json.load(handle)
+                    self.__data = json.load(handle)
 
-        if self.data is None:
+        if self.__data is None:
             print('getting data from darksky')
 
-            options = dict(exclude='minutely')
+            options = dict(exclude='minutely',
+                           units='us')
 
+            # https://darksky.net/dev/docs/forecast
             req = requests.get(self.url, options)
             print('request returned', req.status_code)
             if req.status_code != 200:
                 print(req)
                 raise RuntimeError('Something went wrong')
-            self.data = req.json()
+            # https://darksky.net/dev/docs/response
+            self.__data = req.json()
 
             print('writing data to cache file', cachefile)
             with open(cachefile, 'w') as handle:
-                json.dump(self.data, handle)
+                json.dump(self.__data, handle)
 
     def currently(self):
-        return self.data['currently']
+        return self.__data['currently']
 
     def hourly(self):
-        return self.data['hourly']
+        return self.__data['hourly']
 
     def daily(self):
-        return self.data['daily']
+        return self.__data['daily']
 
     def alerts(self):
-        return self.data.get('alerts', None)
+        return self.__data.get('alerts', None)
 
 if __name__ == "__main__":
-    config = Config('aurorean.json')
+    config = 'aurorean.json'
 
-    print(config.darksky.currently())
+    if os.path.exists(config):
+        with open(config, 'r') as handle:
+            config = json.load(handle)
+    else:
+        raise RuntimeError('failed to find configuration', config)
+
+    # get information for darksky
+    darksky = DarkSky(config.get('darksky', None))
+
+    print(darksky.currently())
     print('*****')
-    print(config.darksky.alerts())
+    print(darksky.alerts())
