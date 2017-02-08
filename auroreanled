@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+from __future__ import (absolute_import, division, print_function)
+
+import datetime
+import hashlib
+import json
+import os
+import requests
+#import yaml  # https://pypi.python.org/pypi/PyYAML/
+
+class Config(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+        with open(filename, 'r') as handle:
+            doc = json.load(handle)
+
+        self.darksky = DarkSky(doc.get('darksky', None))
+
+    def dict(self):
+        return dict(filename=self.filename,
+                    darksky=str(self.darksky))
+
+    def json(self, **kwargs):
+        return json.dumps(self.dict(), **kwargs)
+
+class DarkSky(object):
+    def __init__(self, info):
+        if info is None:
+            self.url = None
+            self.hash = None
+        else:
+            try:
+                self.url = 'https://api.darksky.net/forecast/{secret}/{lat},{lon}'.format(**info)
+                self.hash = '{secret}/{lat},{lon}'.format(**info)
+                self.hash = hashlib.md5(self.hash.encode()).hexdigest()
+            except KeyError as e:
+                print('While getting darksky information')
+                raise e
+        print('>>>>', self.hash)
+
+    def __str__(self):
+        return self.url
+
+    def get(self):
+        cachefile = 'darksky_{0}.json'.format(self.hash)
+        self.data = None
+        if os.path.exists(cachefile):
+            file_created = datetime.datetime.fromtimestamp(os.path.getctime(cachefile))
+            delta = datetime.datetime.now() - filecreated
+            delta = delta.total_seconds()
+            if delta > 3600.:  # older than an hour
+                print('removing old cache file', cachefile)
+                os.remove(cachefile)
+            else:
+                print('loading data from cache file', cachefile)
+                with open(cachefile, 'r') as handle:
+                    self.data = json.load(handle)
+
+        if self.data is None:
+            print('getting data from darksky')
+            req = requests.get(self.url, {})
+            print('request returned', req.status_code)
+            if req.status_code != 200:
+                print(req)
+                raise RuntimeError('Something went wrong')
+            self.data = req.json()
+
+            print('writing data to cache file', cachefile)
+            with open(cachefile, 'w') as handle:
+                json.dump(self.data, handle)
+
+
+if __name__ == "__main__":
+    config = Config('aurorean.json')
+
+    print(config.json())
+    config.darksky.get()
+
+    #if os.path.exists('forecastio.json'):
+    #    with open('forecastio.json', 'r') as handle:
+    #        yaml_doc = yaml.load(handle)
+    #        print yaml_doc['hourly']['data'][0]

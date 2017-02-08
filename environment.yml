@@ -1,0 +1,7 @@
+name: aurorean
+dependencies:
+- yaml
+- matplotlib
+- numpy
+- requests
+- pip
