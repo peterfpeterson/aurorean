@@ -7,7 +7,9 @@ import json
 import os
 import requests
 
+
 class DarkSky(object):
+    # https://darksky.net/dev/docs
     def __init__(self, info):
         self.__data = None
 
@@ -49,7 +51,7 @@ class DarkSky(object):
         if self.__data is None:
             print('getting data from darksky')
 
-            options = dict(exclude='minutely',
+            options = dict(#exclude='minutely',
                            units='us')
 
             # https://darksky.net/dev/docs/forecast
@@ -65,16 +67,44 @@ class DarkSky(object):
             with open(cachefile, 'w') as handle:
                 json.dump(self.__data, handle)
 
+    def __getData(self, key):
+        if key == 'currently':
+            return [self.__data[key]]
+        else:
+            return self.__data[key]['data']
+
+    def temperature(self, key):
+        time, tAvg, tMin, tMax = [], [], [], []
+        for item in self.__getData(key):
+            time.append(datetime.datetime.fromtimestamp(item['time']))
+            tAvg.append(item['temperature'])
+            tMin.append(item.get('temperatureMin', None))
+            tMax.append(item.get('temperatureMax', None))
+        return time, tAvg, tMin, tMax
+
+    def precipitation(self, key):
+        # probability from 0->1
+        time, prob, inches = [], [], []
+        for item in self.__getData(key):
+            time.append(datetime.datetime.fromtimestamp(item['time']))
+            prob.append(float(item.get('precipProbability', 0.)))
+            inches.append(float(item.get('precipIntensity', 0.)))
+        return time, prob, inches
+
     def currently(self):
+        # keys are ['summary', 'icon', 'data']
+        # data is a list
         return self.__data['currently']
 
     def hourly(self):
+        # keys are ['summary', 'icon', 'data']
         return self.__data['hourly']
 
     def daily(self):
         return self.__data['daily']
 
     def alerts(self):
+        # data is a list
         return self.__data.get('alerts', None)
 
 if __name__ == "__main__":
@@ -89,6 +119,14 @@ if __name__ == "__main__":
     # get information for darksky
     darksky = DarkSky(config.get('darksky', None))
 
-    print(darksky.currently())
+    #print(len(darksky.hourly()['data']))
+    print(darksky.hourly()['data'][0].keys())
+    #print('*****')
+    #print(darksky.temperature('hourly'))
     print('*****')
-    print(darksky.alerts())
+    print(darksky.temperature('currently'))
+    print('*****')
+    print(darksky.precipitation('currently'))
+    #print('*****')
+    #print(darksky.currently())
+    #print(darksky.alerts())
